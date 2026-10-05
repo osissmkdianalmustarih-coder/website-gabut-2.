@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seberapa Kenal Kamu Sama Aku? 💕</title>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#ffe4ec;--bg2:#ffc2d4;--card:#fffafc;--ink:#5a2a3c;--soft:#9b6075;--pink:#e8466f;--line:#f3b6c8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#2a1220;--bg2:#40182d;--card:#3a1a2b;--ink:#ffe4ec;--soft:#e2a3b9;--pink:#ff6b92;--line:#6b2c46}}
+:root[data-theme="dark"]{--bg1:#2a1220;--bg2:#40182d;--card:#3a1a2b;--ink:#ffe4ec;--soft:#e2a3b9;--pink:#ff6b92;--line:#6b2c46}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg2));color:var(--ink);font-family:Quicksand,system-ui,sans-serif;display:flex;justify-content:center;padding:20px 14px;overflow-x:hidden}
+.hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.hearts span{position:absolute;bottom:-40px;animation:up linear infinite;opacity:.5}
+@keyframes up{to{transform:translateY(-110vh) rotate(25deg);opacity:0}}
+.card{position:relative;width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 22px;box-shadow:0 12px 40px rgba(232,70,111,.18);height:fit-content;margin:auto}
+h1{font-family:'Dancing Script',cursive;font-size:2.2rem;color:var(--pink);margin:0 0 8px;text-align:center}
+p{line-height:1.55}.c{text-align:center;color:var(--soft)}
+.big{font-size:3rem;text-align:center}
+input{width:100%;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:1rem;margin:10px 0}
+input:focus{outline:2px solid var(--pink);border-color:transparent}
+button{font:inherit;font-weight:600;cursor:pointer;border:0;border-radius:999px;padding:13px 22px;background:var(--pink);color:#fff;width:100%;margin-top:6px}
+button.alt{background:transparent;color:var(--pink);border:1.5px solid var(--pink)}
+.bar{height:6px;background:var(--line);border-radius:9px;margin-bottom:18px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pink);transition:width .4s}
+.q{font-size:1.2rem;font-weight:600;margin:6px 0}
+.row{display:flex;gap:10px}
+.hint{font-size:.85rem;color:var(--soft)}
+.res{border-top:1px dashed var(--line);padding:12px 0;font-size:.92rem}
+.res b{color:var(--pink)}
+.ok{color:#2e9e5b}.no{color:#d64545}
+.tag{display:inline-block;font-size:.75rem;color:var(--soft);margin-top:14px;text-align:center;width:100%}
+</style>
+</head>
+<body>
+<div class="hearts" id="hearts"></div>
+<main class="card" id="app"></main>
+
+<script>
+const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+const QS=[
+ {t:"Aku paling suka makan apa? 🍽️",type:"text",ph:"Tulis jawabanmu…",ans:"Nasi goreng dan pisang goreng",ok:v=>/nasi\s*goreng/.test(norm(v))&&/pisang\s*goreng/.test(norm(v)),hint:"Boleh lebih dari satu ya 😉"},
+ {t:"Kapan tanggal lahir aku? 🎂",type:"date",ans:"05 Desember 2009",ok:v=>v==="2009-12-05"},
+ {t:"Siapa cewek aku? 💖",type:"text",ph:"Nama lengkap…",ans:"Naila Husna Hidayat",ok:v=>/naila/.test(norm(v))&&/husna/.test(norm(v))&&/hidayat/.test(norm(v)),hint:"Nama lengkapnya ya"},
+ {t:"Aku paling nggak suka apa? 😖",type:"text",ph:"Tulis jawabanmu…",ans:"Belajar",ok:v=>/belajar/.test(norm(v))},
+ {t:"Aku paling suka apa? 😋",type:"text",ph:"Tulis jawabanmu…",ans:"Makan",ok:v=>/makan/.test(norm(v))},
+ {t:"Kapan kita fotobox bareng? 📸",type:"date",ans:"29 Agustus 2026",ok:v=>v==="2026-08-29"},
+ {t:"Kamu suka aku atau enggak? 🥺",type:"choice",ans:"Suka",ok:v=>v==="Suka"}
+];
+const app=document.getElementById('app');
+let name='',i=0,answers=[],db=null,user=null,isAdmin=false,started=false;
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function fmtDate(v){if(!/^\d{4}-\d\d-\d\d$/.test(v||''))return v||'-';const [y,m,d]=v.split('-');return `${d}/${m}/${y}`}
+
+function start(){
+ started=false;
+ app.innerHTML=`<div class="big">💌</div><h1>Seberapa Kenal Kamu Sama Aku?</h1>
+ <p class="c">Ada 7 pertanyaan kecil dari aku buat kamu. Jawab dari hati ya, sayang 🌸</p>
+ <input id="nm" placeholder="Nama kamu…" maxlength="40">
+ <button id="go">Mulai 💕</button>
+ <div id="adm"></div>`;
+ document.getElementById('go').onclick=()=>{started=true;name=document.getElementById('nm').value.trim()||'Sayang';i=0;answers=[];ask()};
+ if(isAdmin){document.getElementById('adm').innerHTML='<button class="alt" id="seeres">🔒 Lihat Hasil (Admin)</button>';document.getElementById('seeres').onclick=showAdmin}
+}
+
+function ask(){
+ const q=QS[i];
+ let field='';
+ if(q.type==='text')field=`<input id="a" placeholder="${q.ph}" autocomplete="off">`;
+ if(q.type==='date')field=`<input id="a" type="date">`;
+ if(q.type==='choice')field=`<div class="row"><button id="y">Suka 💗</button><button class="alt" id="n">Tidak</button></div>`;
+ app.innerHTML=`<div class="bar"><i style="width:${(i/QS.length)*100}%"></i></div>
+ <div class="hint">Pertanyaan ${i+1} dari ${QS.length}</div><div class="q">${q.t}</div>
+ ${q.hint?`<div class="hint">${q.hint}</div>`:''}${field}
+ ${q.type!=='choice'?'<button id="nx">Lanjut →</button>':''}`;
+ if(q.type==='choice'){document.getElementById('y').onclick=()=>next('Suka');document.getElementById('n').onclick=()=>next('Tidak')}
+ else{const a=document.getElementById('a');const f=()=>{if(!a.value.trim())return a.focus();next(a.value.trim())};document.getElementById('nx').onclick=f;a.onkeydown=e=>{if(e.key==='Enter')f()};a.focus()}
+}
+
+function next(v){
+ answers.push({q:QS[i].t,given:v,correct:QS[i].ok(v),expected:QS[i].ans});
+ i++;i<QS.length?ask():finish();
+}
+
+async function finish(){
+ const score=answers.filter(a=>a.correct).length;
+ app.innerHTML=`<div class="big">💞</div><h1>Terima kasih, ${esc(name)}!</h1>
+ <p class="c">Jawabanmu sudah terkirim ke aku. Hasilnya cuma aku yang bisa lihat 🤫</p>
+ <p class="c">Apa pun hasilnya, aku sayang kamu. 💗</p>
+ <button id="again" class="alt">Ulangi</button><div class="tag" id="st"></div>`;
+ document.getElementById('again').onclick=start;
+ const st=document.getElementById('st');
+ try{
+  if(!db)throw 0;
+  await db.collection('results').doc().set({name,score,total:QS.length,answers,at:Date.now()});
+  st.textContent='✓ Terkirim';
+ }catch(e){st.textContent='Jawabanmu belum bisa dikirim (pastikan kamu sudah login ke Claude).'}
+}
+
+function showAdmin(){
+ app.innerHTML=`<h1>Hasil Quiz 🔒</h1><p class="c" id="cnt">Memuat…</p><div id="list"></div><button class="alt" id="bk">← Kembali</button>`;
+ document.getElementById('bk').onclick=start;
+ db.collection('results').orderBy('at','desc').onSnapshot(snap=>{
+  const docs=snap.docs.map(d=>d.data());
+  document.getElementById('cnt').textContent=docs.length?`${docs.length} percobaan`:'Belum ada yang mengisi.';
+  document.getElementById('list').innerHTML=docs.map(r=>`<div class="res"><b>${esc(r.name)}</b> — skor ${r.score}/${r.total} · <span class="hint">${new Date(r.at).toLocaleString('id-ID')}</span>
+  ${(r.answers||[]).map((a,n)=>`<div>${n+1}. <span class="${a.correct?'ok':'no'}">${a.correct?'✓':'✗'}</span> ${esc(/^\d{4}-/.test(a.given)?fmtDate(a.given):a.given)}${a.correct?'':` <span class="hint">(benar: ${esc(a.expected)})</span>`}</div>`).join('')}</div>`).join('');
+ },()=>{const c=document.getElementById('cnt');if(c)c.textContent='Hanya admin yang bisa melihat hasil.'});
+}
+
+(function hearts(){const h=document.getElementById('hearts');const e=['💗','💕','🌸','💖'];for(let k=0;k<14;k++){const s=document.createElement('span');s.textContent=e[k%4];s.style.left=Math.random()*100+'%';s.style.fontSize=(14+Math.random()*18)+'px';s.style.animationDuration=(9+Math.random()*10)+'s';s.style.animationDelay=(-Math.random()*15)+'s';h.appendChild(s)}})();
+
+start();
+(async()=>{
+ try{
+  if(!window.claude)return;
+  user=await claude.use('user');
+  db=await claude.use('db');
+  isAdmin=!!(user&&user.isOwner()&&db);
+  if(isAdmin&&!started)start();
+ }catch(e){}
+})();
+</script>
+</body>
+</html>
